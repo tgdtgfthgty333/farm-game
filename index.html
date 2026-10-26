@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لعبة المزرعة الاحترافية المتكاملة</title>
+    <style>
+        body { font-family: Tahoma; text-align: center; background-color: #1b5e20; margin: 0; padding: 0; color: #fff; direction: rtl; overflow-x: hidden; }
+        .game-container { position: relative; width: 100%; max-width: 400px; height: 100vh; margin: 0 auto; background: linear-gradient(to bottom, #81c784, #388e3c); border: 3px solid #000; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+
+        /* الشريط العلوي */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.5); padding: 8px 12px; border-bottom: 2px solid #ffcc00; }
+        .profile-btn { background: #d32f2f; border: 2px solid #ffeb3b; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+        .balance-display { background: rgba(255, 255, 255, 0.2); padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; color: #ffeb3b; border: 1px solid #ffeb3b; }
+
+        /* الأزرار الجانبية */
+        .side-menu { position: absolute; right: 10px; top: 70px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
+        .side-btn { width: 40px; height: 40px; background: #ff9800; border: 2px solid #fff; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 3px 5px rgba(0,0,0,0.4); }
+
+        /* شبكة الأراضي الزراعية */
+        .farm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 20px 10px; margin-top: 15px; }
+        .plot { background: #795548; border: 3px solid #4e342e; height: 75px; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; font-size: 11px; position: relative; box-shadow: 0 5px 5px rgba(0,0,0,0.3); }
+        .plot.locked { background: #78909c; border-color: #455a64; cursor: not-allowed; }
+        .plot.locked::after { content: '🔒'; position: absolute; font-size: 20px; }
+
+        /* شريط الأدوات السفلي */
+        .bottom-toolbar { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); padding: 8px; border-top: 2px solid #fff; }
+        .tool-icon { width: 45px; height: 45px; background: #fff; border: 2px solid #333; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 22px; cursor: pointer; box-shadow: 0 3px 5px rgba(0,0,0,0.3); }
+
+        /* النوافذ المنبثقة */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 100; }
+        .modal-box { background: #fdf5e6; color: #333; padding: 15px; border-radius: 12px; width: 85%; max-width: 320px; border: 3px solid #8d6e63; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
+        .modal-header { font-size: 16px; font-weight: bold; color: #5d4037; margin-bottom: 10px; border-bottom: 2px solid #d7ccc8; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* عناصر المخزن */
+        .seed-card { background: #fff; border: 2px solid #c8e6c9; padding: 8px; margin: 6px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: right; }
+        .buy-btn { background: #ff9800; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+        /* حقول البروفايل */
+        .profile-input { width: 90%; padding: 6px; margin: 4px 0; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 12px; }
+        .action-btn { background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 95%; margin-top: 4px; }
+        .close-x { background: #f44336; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <!-- الشريط العلوي -->
+        <div class="top-bar">
+            <button class="profile-btn" onclick="openProfile()">⚙️ Moashraf (ID:100005)</button>
+            <div class="balance-display">💰 <span id="balance">100.00</span></div>
+        </div>
+
+        <!-- الأزرار الجانبية -->
+        <div class="side-menu">
+            <button class="side-btn" onclick="openShop()">🛒</button>
+            <button class="side-btn" onclick="alert('قسم المهام والجوائز')">📜</button>
+            <button class="side-btn" onclick="alert('عجلة الحظ اليومية')">🎡</button>
+        </div>
+
+        <h3>مزرعة المال الحقيقي 🌾</h3>
+
+        <!-- شبكة الأراضي -->
+        <div class="farm-grid" id="farmGrid"></div>
+
+        <!-- شريط الأدوات السفلي -->
+        <div class="bottom-toolbar">
+            <div class="tool-icon" onclick="openShop()" title="المخزن">🎒</div>
+            <div class="tool-icon" onclick="alert('أداة الفأس')" title="فأس">⛏️</div>
+            <div class="tool-icon" onclick="alert('أداة الحصاد')" title="الحصاد">✋</div>
+            <div class="tool-icon" onclick="alert('أداة الرش')" title="الري">🚿</div>
+        </div>
+
+    </div>
+
+    <!-- نافذة المخزن وبذور المحاصيل -->
+    <div class="modal" id="shopModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>مخزن البذور 🛒</span>
+                <button class="close-x" onclick="closeModal('shopModal')">X</button>
+            </div>
+            
+            <div class="seed-card">
+                <div><b>ملفوف</b><br><small>ينضج خلال 16 ساعة<br>يحقق 55 عملة</small></div>
+                <button class="buy-btn" onclick="buySeed(50, 'ملفوف', 55)">شراء 50</button>
+            </div>
+            <div class="seed-card">
+                <div><b>فجل أبيض</b><br><small>ينضج خلال 16 ساعة<br>يحقق 165 عملة</small></div>
+                <button class="buy-btn" onclick="buySeed(150, 'فجل أبيض', 165)">شراء 150</button>
+            </div>
+            <div class="seed-card">
+                <div><b>جزر</b><br><small>ينضج خلال 16 ساعة<br>يحقق 385 عملة</small></div>
+                <button class="buy-btn" onclick="buySeed(350, 'جزر', 385)">شراء 350</button>
+            </div>
+            <div class="seed-card">
+                <div><b>قرنبيط</b><br><small>ينضج خلال 16 ساعة<br>يحقق 990 عملة</small></div>
+                <button class="buy-btn" onclick="buySeed(900, 'قرنبيط', 990)">شراء 900</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الملف الشخصي والشحن والسحب المباشر -->
+    <div class="modal" id="profileModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>معلومات شخصية</span>
+                <button class="close-x" onclick="closeModal('profileModal')">X</button>
+            </div>
+            
+            <p style="font-size: 12px; margin: 3px 0;"><b>Moashraf</b> | Mmedowater@gmail.com</p>
+            <p style="font-size: 11px; color: #666; margin: 0 0 5px 0;">ID: 100005</p>
+
+            <div style="font-size: 13px; font-weight: bold; background: #eee; padding: 4px; border-radius: 5px;">الرصيد الحالي: <span id="profileBalance">100.00</span></div>
+
+            <!-- شحن مباشر -->
+            <div style="margin-top: 6px;">
+                <input type="number" id="depositInput" class="profile-input" placeholder="مبلغ الشحن بالجنيه">
+                <button class="action-btn" style="background:#ff9800;" onclick="directDeposit()">شحن الرصيد 💳</button>
+            </div>
+
+            <!-- ربط وسحب مباشر -->
+            <div style="margin-top: 6px;">
+                <input type="text" id="trcInput" class="profile-input" placeholder="عنوان محفظة TRC-20">
+                <input type="number" id="withdrawInput" class="profile-input" placeholder="مبلغ السحب">
+                <button class="action-btn" onclick="directWithdraw()">سحب الأرباح 💸</button>
+            </div>
+            
+            <button class="close-x" style="background:#d32f2f; width:auto; padding:4px 12px; border-radius:5px; margin:8px auto 0 auto;" onclick="closeModal('profileModal')">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        let balance = 100.00;
+        let plots = [
+            { id: 1, status: 'empty', crop: null, reward: 0, timeLeft: 0 },
+            { id: 2, status: 'locked', crop: null, reward: 0, timeLeft: 0 },
+            { id: 3, status: 'locked', crop: null, reward: 0, timeLeft: 0 },
+            { id: 4, status: 'locked', crop: null, reward: 0, timeLeft: 0 },
+            { id: 5, status: 'locked', crop: null, reward: 0, timeLeft: 0 },
+            { id: 6, status: 'locked', crop: null, reward: 0, timeLeft: 0 }
+        ];
+        let selectedSeed = null;
+        let seedReward = 0;
+
+        function updateUI() {
+            document.getElementById('balance').innerText = balance.toFixed(2);
+            document.getElementById('profileBalance').innerText = balance.toFixed(2);
+            
+            let gridHtml = '';
+            plots.forEach((plot, index) => {
+                if (plot.status === 'locked') {
+                    gridHtml += `<div class="plot locked"></div>`;
+                } else if (plot.status === 'empty') {
+                    gridHtml += `<div class="plot" onclick="plantPlot(${index})">🌱 أرض فارغة<br><small>زرع</small></div>`;
+                } else if (plot.status === 'growing') {
+                    gridHtml += `<div class="plot" style="background: #aed581; color: #000;">🌿 ${plot.crop}<br><b>${plot.timeLeft}ث</b></div>`;
+                } else if (plot.status === 'ready') {
+                    gridHtml += `<div class="plot" style="background: #ffb74d; color: #000;" onclick="harvestPlot(${index})">✨ جاهزة!<br><b>الحصاد</b></div>`;
+                }
+            });
+            document.getElementById('farmGrid').innerHTML = gridHtml;
+        }
+
+        function openShop() { document.getElementById('shopModal').style.display = 'flex'; }
+        function openProfile() { document.getElementById('profileModal').style.display = 'flex'; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
+        function buySeed(price, seedName, reward) {
+            if (balance >= price) {
+                balance -= price;
+                selectedSeed = seedName;
+                seedReward = reward;
+                closeModal('shopModal');
+                alert("تم شراء بذور " + seedName + "! اضغط على الأرض المتاحة لزرعها.");
+                updateUI();
+            } else {
+                alert("رصيد العملات غير كافٍ لشراء هذه البذور!");
+            }
+        }
+
+        function plantPlot(index) {
+            if (!selectedSeed) {
+                alert("يرجى فتح المخزن واختيار بذور أولاً!");
+                openShop();
+                return;
+            }
+
+            plots[index].status = 'growing';
+            plots[index].crop = selectedSeed;
+            plots[index].reward = seedReward;
+            plots[index].timeLeft = 10; 
+            selectedSeed = null;
+            seedReward = 0;
+            updateUI();
+
+            let timer = setInterval(() => {
+                plots[index].timeLeft--;
+                updateUI();
+                if (plots[index].timeLeft <= 0) {
+                    clearInterval(timer);
+                    plots[index].status = 'ready';
+                    updateUI();
+                }
+            }, 1000);
+        }
+
+        function harvestPlot(index) {
+            let earned = plots[index].reward;
+            balance += earned; 
+            plots[index].status = 'empty';
+            plots[index].crop = null;
+            plots[index].reward = 0;
+            alert("تم الحصاد بنجاح! وتم إضافة " + earned + " عملة لرصيدك.");
+            updateUI();
+        }
+
+        function directDeposit() {
+            let amt = Number(document.getElementById('depositInput').value);
+            if (amt > 0) {
+                balance += amt;
+                updateUI();
+                alert("تم شحن مبلغ " + amt + " جنيه بنجاح!");
+                document.getElementById('depositInput').value = '';
+            } else {
+                alert("الرجاء إدخال مبلغ صحيح للشحن!");
+            }
+        }
+
+        function directWithdraw() {
+            let addr = document.getElementById('trcInput').value;
+            let wAmt = Number(document.getElementById('withdrawInput').value);
+
+            if (!addr.trim()) {
+                alert("يرجى إدخال عنوان محفظة TRC-20 أولاً!");
+                return;
+            }
+            if (wAmt > 0 && wAmt <= balance) {
+                balance -= wAmt;
+                updateUI();
+                alert("تم إرسال طلب سحب مبلغ " + wAmt + " إلى المحفظة بنجاح!");
+                document.getElementById('withdrawInput').value = '';
+            } else {
+                alert("المبلغ غير صحيح أو رصيدك الحالي لا يكفي!");
+            }
+        }
+
+        updateUI();
+    </script>
+
+</body>
+</html>
